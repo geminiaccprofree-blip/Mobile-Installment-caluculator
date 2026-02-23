@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Installment Calculator</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- CDN Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            /* Light Mode Defaults */
+            --bg-primary: #F1F5F9;
+            --bg-secondary: #FFFFFF;
+            --card-bg: #FFFFFF;
+            --border: #E2E8F0;
+            --input-bg: #F8FAFC;
+            --input-border: #CBD5E1;
+            --accent: #7C3AED;
+            --accent-2: #3B82F6;
+            --text-primary: #1A1A2E;
+            --text-secondary: #64748B;
+            --success: #10B981;
+            --info: #3B82F6;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #0A0A0F;
+            --bg-secondary: #12121A;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+            --input-bg: rgba(255, 255, 255, 0.08);
+            --input-border: rgba(255, 255, 255, 0.15);
+            --text-primary: #FFFFFF;
+            --text-secondary: #94A3B8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            padding: 20px;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .container {
+            max-width: 860px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-title {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .theme-toggle {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-primary);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-prefix {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .input-with-prefix {
+            padding-left: 45px !important;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="date"] {
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            padding: 12px 16px;
+            width: 100%;
+            font-size: 16px;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
+        }
+
+        .note {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+        }
+
+        .btn-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-outline.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .price-info {
+            font-weight: 700;
+            margin-top: 10px;
+        }
+
+        .text-success { color: var(--success); }
+        .text-info { color: var(--info); }
+
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            margin-bottom: 15px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .switch input { opacity: 0; width: 0; height: 0; }
+
+        .slider-round {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--input-border);
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider-round:before {
+            position: absolute;
+            content: "";
+            height: 18px; width: 18px;
+            left: 3px; bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider-round { background-color: var(--accent); }
+        input:checked + .slider-round:before { transform: translateX(20px); }
+
+        .markup-options {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            background: var(--input-bg);
+            border-radius: 8px;
+        }
+
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .range-container {
+            margin-top: 20px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: var(--input-border);
+            border-radius: 5px;
+            outline: none;
+            -webkit-appearance: none;
+            margin: 15px 0;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--accent);
+            cursor: pointer;
+            border-radius: 50%;
+        }
+
+        .months-display {
+            font-size: 24px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 15px;
+            color: var(--accent);
+        }
+
+        .calculate-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+        }
+
+        .calculate-btn:hover {
+            opacity: 0.9;
+            transform: scale(0.98);
+        }
+
+        .results-card, .comparison-card, .receipt-card {
+            display: none;
+            animation: fadeIn 0.8s ease;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .result-row:last-child { border-bottom: none; }
+
+        .result-label { color: var(--text-secondary); }
+        .result-value { font-weight: 600; }
+
+        .main-installment {
+            text-align: center;
+            padding: 20px 0;
+            margin-top: 10px;
+            border-top: 2px dashed var(--border);
+        }
+
+        .installment-amount {
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 10px 0;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .highlight-row {
+            background: var(--accent) !important;
+            color: white !important;
+        }
+
+        .highlight-row td { color: white !important; }
+
+        .receipt-preview-container {
+            background: #f1f5f9;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        #receipt-preview {
+            background: white;
+            color: black;
+            padding: 40px;
+            max-width: 500px;
+            margin: 0 auto;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .receipt-header { text-align: center; margin-bottom: 20px; }
+        .receipt-shop-name { font-size: 22px; font-weight: 800; text-transform: uppercase; }
+        .receipt-shop-info { font-size: 12px; color: #444; margin-top: 5px; }
+        .receipt-divider { border-top: 1px solid #000; margin: 15px 0; }
+        .receipt-dashed { border-top: 1px dashed #666; margin: 15px 0; }
+        .receipt-title { text-align: center; font-weight: 700; margin-bottom: 10px; }
+        .receipt-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
+        .receipt-label { font-weight: 400; }
+        .receipt-value { font-weight: 700; }
+        .receipt-schedule { margin-top: 15px; }
+        .schedule-item { font-size: 13px; margin-bottom: 5px; }
+        .receipt-signatures { display: flex; justify-content: space-between; margin-top: 40px; }
+        .signature-box { border-top: 1px solid #000; width: 45%; text-align: center; padding-top: 5px; font-size: 12px; }
+        .receipt-footer { text-align: center; font-size: 12px; margin-top: 20px; color: #444; }
+
+        .download-btns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .btn-download {
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-pdf { background: linear-gradient(135deg, #3B82F6, #2563EB); }
+        .btn-png { background: linear-gradient(135deg, #7C3AED, #6D28D9); }
+
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-bottom: 20px;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            .container { padding: 0 10px; }
+            .btn-grid { grid-template-columns: repeat(3, 1fr); }
+            .download-btns { grid-template-columns: 1fr; }
+            .installment-amount { font-size: 28px; }
+            .card { padding: 16px; }
+        }
+
+        @media (max-width: 480px) {
+            .header-title { font-size: 20px; }
+            .btn-grid { grid-template-columns: repeat(3, 1fr); }
+            #receipt-preview { padding: 20px; }
+        }
+    </style>
+</head>
+<body data-theme="dark">
+    <div class="container">
+        <header>
+            <div class="header-left">
+                <span style="font-size: 24px;">📱</span>
+                <h1 class="header-title">Mobile Installment Calculator</h1>
+            </div>
+            <button class="theme-toggle" id="theme-toggle" title="Toggle Theme">
+                <span id="theme-icon">🌙</span>
+            </button>
+        </header>
+
+        <!-- Card 1: Shop Details -->
+        <div class="card">
+            <h2 class="card-title">🏪 Shop Details</h2>
+            <div class="form-group">
+                <label>Shop Name</label>
+                <input type="text" id="shop-name" placeholder="e.g. Star Mobile Center">
+            </div>
+            <div class="form-group">
+                <label>Shop Address</label>
+                <input type="text" id="shop-address" placeholder="e.g. Main Bazar, Pirowal">
+            </div>
+            <div class="form-group">
+                <label>Shop Phone</label>
+                <input type="text" id="shop-phone" placeholder="e.g. 0300-1234567">
+            </div>
+            <p class="note">These details will appear on receipt</p>
+        </div>
+
+        <!-- Card 2: Mobile Details -->
+        <div class="card">
+            <h2 class="card-title">📱 Mobile Details</h2>
+            <div class="form-group">
+                <label>Mobile Model</label>
+                <input type="text" id="mobile-model" placeholder="e.g. Samsung A55">
+            </div>
+            <div class="form-group">
+                <label>Original Price</label>
+                <div class="input-wrapper">
+                    <span class="input-prefix">Rs.</span>
+                    <input type="number" id="original-price" class="input-with-prefix" placeholder="Enter mobile price">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Profit Margin</label>
+                <div class="btn-grid" id="profit-btns">
+                    <button class="btn-outline" data-val="5">5%</button>
+                    <button class="btn-outline" data-val="10">10%</button>
+                    <button class="btn-outline" data-val="15">15%</button>
+                    <button class="btn-outline" data-val="20">20%</button>
+                    <button class="btn-outline" data-val="25">25%</button>
+                    <button class="btn-outline" id="custom-profit-btn">Custom</button>
+                </div>
+                <div id="custom-profit-container" style="display: none; margin-bottom: 15px;">
+                    <input type="number" id="custom-profit-input" placeholder="Enter custom profit %">
+                </div>
+                <p class="price-info text-success">Selling Price: Rs. <span id="selling-price-display">0</span></p>
+            </div>
+        </div>
+
+        <!-- Card 3: Installment Settings -->
+        <div class="card">
+            <h2 class="card-title">⚙️ Installment Settings</h2>
+            <div class="form-group">
+                <label>Down Payment</label>
+                <div class="input-wrapper">
+                    <span class="input-prefix">Rs.</span>
+                    <input type="number" id="down-payment" class="input-with-prefix" placeholder="Rs. 0 (optional)">
+                </div>
+                <p class="price-info text-info">Remaining: Rs. <span id="remaining-price-display">0</span></p>
+            </div>
+
+            <div class="form-group">
+                <label class="toggle-switch">
+                    <div class="switch">
+                        <input type="checkbox" id="markup-toggle">
+                        <span class="slider-round"></span>
+                    </div>
+                    <span>Add Markup (Interest)</span>
+                </label>
+
+                <div class="markup-options" id="markup-options">
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="markup-type" value="flat" checked>
+                            <span>Option A — Flat Markup (One time % on total)</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="markup-type" value="monthly">
+                            <span>Option B — Monthly Markup (% per month)</span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label id="markup-label">Markup Percentage (%)</label>
+                        <input type="number" id="markup-percent" placeholder="e.g. 10">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group range-container">
+                <label>Installment Duration</label>
+                <div class="months-display"><span id="months-val">12</span> Months</div>
+                <input type="range" id="months-slider" min="1" max="24" value="12">
+                <div class="btn-grid">
+                    <button class="btn-outline quick-month" data-val="3">3</button>
+                    <button class="btn-outline quick-month" data-val="6">6</button>
+                    <button class="btn-outline quick-month" data-val="9">9</button>
+                    <button class="btn-outline quick-month active" data-val="12">12</button>
+                    <button class="btn-outline quick-month" data-val="18">18</button>
+                    <button class="btn-outline quick-month" data-val="24">24</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 4: Calculate Button -->
+        <button class="calculate-btn" id="calculate-btn">Calculate Installment</button>
+
+        <!-- Card 5: Results -->
+        <div class="card results-card" id="results-card">
+            <h2 class="card-title">📊 Calculation Results</h2>
+            <div class="result-row">
+                <span class="result-label">Original Price</span>
+                <span class="result-value">Rs. <span id="res-original">0</span></span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Profit Added</span>
+                <span class="result-value">Rs. <span id="res-profit-amt">0</span> (<span id="res-profit-pct">0</span>%)</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Selling Price</span>
+                <span class="result-value">Rs. <span id="res-selling">0</span></span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Down Payment</span>
+                <span class="result-value">Rs. <span id="res-down">0</span></span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Remaining Amount</span>
+                <span class="result-value">Rs. <span id="res-remaining">0</span></span>
+            </div>
+            <div class="result-row" id="res-markup-row" style="display: none;">
+                <span class="result-label">Markup Amount</span>
+                <span class="result-value">Rs. <span id="res-markup-amt">0</span></span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Total Payable</span>
+                <span class="result-value">Rs. <span id="res-total">0</span></span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Duration</span>
+                <span class="result-value"><span id="res-months">0</span> Months</span>
+            </div>
+            
+            <div class="main-installment">
+                <div class="result-label">MONTHLY INSTALLMENT</div>
+                <div class="installment-amount">Rs. <span id="res-installment">0</span> / month</div>
+            </div>
+        </div>
+
+        <!-- Card 6: Comparison Table -->
+        <div class="card comparison-card" id="comparison-card">
+            <h2 class="card-title">📈 Compare All Plans</h2>
+            <div class="table-container">
+                <table id="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Months</th>
+                            <th>Monthly Payment</th>
+                            <th>Total Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Generated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Card 7: Receipt Generator -->
+        <div class="card receipt-card" id="receipt-card">
+            <h2 class="card-title">🧾 Receipt Generator</h2>
+            <div class="form-group">
+                <label>Customer Name</label>
+                <input type="text" id="cust-name" placeholder="Customer full name">
+            </div>
+            <div class="form-group">
+                <label>Customer Phone</label>
+                <input type="text" id="cust-phone" placeholder="e.g. 0311-1234567">
+            </div>
+            <div class="form-group">
+                <label>Sale Date</label>
+                <input type="date" id="sale-date">
+            </div>
+            <div class="form-group">
+                <label>Receipt Number</label>
+                <input type="text" id="receipt-num">
+            </div>
+            <button class="calculate-btn" id="generate-receipt-btn">Generate Receipt</button>
+
+            <div class="receipt-preview-container" id="receipt-preview-container">
+                <div id="receipt-preview">
+                    <div class="receipt-header">
+                        <div class="receipt-shop-name" id="rec-shop-name">SHOP NAME</div>
+                        <div class="receipt-shop-info" id="rec-shop-info">Address | Phone</div>
+                    </div>
+                    <div class="receipt-divider"></div>
+                    <div class="receipt-title">INSTALLMENT AGREEMENT</div>
+                    <div class="receipt-row">
+                        <span>Receipt No: <span id="rec-num">RCP-0000</span></span>
+                        <span>Date: <span id="rec-date">00/00/0000</span></span>
+                    </div>
+                    <div class="receipt-divider"></div>
+                    <div class="receipt-row">
+                        <span class="receipt-label">Customer Name:</span>
+                        <span class="receipt-value" id="rec-cust-name">-</span>
+                    </div>
+                    <div class="receipt-row">
+                        <span class="receipt-label">Customer Phone:</span>
+                        <span class="receipt-value" id="rec-cust-phone">-</span>
+                    </div>
+                    <div class="receipt-divider"></div>
+                    <div class="receipt-row">
+                        <span class="receipt-label">Mobile Model:</span>
+                        <span class="receipt-value" id="rec-model">-</span>
+                    </div>
+                    <div class="receipt-row">
+                        <span class="receipt-label">Original Price:</span>
+                        <span class="receipt-value">Rs. <span id="rec-orig">0</span></span>
+                    </div>
+                    <div class="receipt-row">
+                        <span class="receipt-label">Selling Price:</span>
+                        <span class="receipt-value">Rs. <span id="rec-sell">0</span></span>
+                    </div>
+                    <div class="receipt-dashed"></div>
+                    <div class="receipt-row">
+                        <span class="receipt-label">Down Payment:</span>
+                        <span class="receipt-value">Rs. <span id="rec-down">0</span></span>
+                    </div>
+                    <div class="receipt-row">
+                        <span class="receipt-label">Remaining Amount:</span>
+                        <span class="receipt-value">Rs. <span id="rec-rem">0</span></span>
+                    </div>
+                    <div class="receipt-row" id="rec-markup-row">
+                        <span class="receipt-label">Markup Amount:</span>
+                        <span class="receipt-value">Rs. <span id="rec-markup">0</span></span>
+                    </div>
+                    <div class="receipt-row">
+                        <span class="receipt-label">Total Payable:</span>
+                        <span class="receipt-value">Rs. <span id="rec-total">0</span></span>
+                    </div>
+                    <div class="receipt-row">
+                        <span class="receipt-label">Monthly Installment:</span>
+                        <span class="receipt-value">Rs. <span id="rec-inst">0</span></span>
+                    </div>
+                    <div class="receipt-row">
+                        <span class="receipt-label">Duration:</span>
+                        <span class="receipt-value"><span id="rec-months">0</span> Months</span>
+                    </div>
+                    <div class="receipt-divider"></div>
+                    <div class="receipt-schedule" id="rec-schedule">
+                        <!-- Schedule items -->
+                    </div>
+                    <div class="receipt-divider"></div>
+                    <div class="receipt-signatures">
+                        <div class="signature-box">Customer Signature</div>
+                        <div class="signature-box">Owner Signature</div>
+                    </div>
+                    <div class="receipt-footer">
+                        <p>Terms: Payment due on time each month. Late payment may incur extra charges.</p>
+                        <p style="margin-top: 10px; font-weight: 700;">Thank you for choosing <span id="rec-footer-shop">Shop</span>!</p>
+                    </div>
+                </div>
+
+                <div class="download-btns">
+                    <button class="btn-download btn-pdf" id="download-pdf">
+                        <span>📄</span> Download PDF
+                    </button>
+                    <button class="btn-download btn-png" id="download-png">
+                        <span>🖼️</span> Download PNG
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            Mobile Installment Calculator — Built for Pakistani Mobile Shops
+        </footer>
+    </div>
+
+    <script>
+        // State Management
+        const state = {
+            theme: 'dark',
+            profitPercent: 10,
+            months: 12,
+            markupEnabled: false,
+            markupType: 'flat', // 'flat' or 'monthly'
+            originalPrice: 0,
+            downPayment: 0,
+            markupPercent: 0,
+            sellingPrice: 0,
+            remainingAmount: 0,
+            markupAmount: 0,
+            totalPayable: 0,
+            monthlyInstallment: 0
+        };
+
+        // DOM Elements
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeIcon = document.getElementById('theme-icon');
+        const body = document.body;
+
+        const originalPriceInput = document.getElementById('original-price');
+        const profitBtns = document.querySelectorAll('#profit-btns .btn-outline');
+        const customProfitBtn = document.getElementById('custom-profit-btn');
+        const customProfitContainer = document.getElementById('custom-profit-container');
+        const customProfitInput = document.getElementById('custom-profit-input');
+        const sellingPriceDisplay = document.getElementById('selling-price-display');
+
+        const downPaymentInput = document.getElementById('down-payment');
+        const remainingPriceDisplay = document.getElementById('remaining-price-display');
+
+        const markupToggle = document.getElementById('markup-toggle');
+        const markupOptions = document.getElementById('markup-options');
+        const markupPercentInput = document.getElementById('markup-percent');
+        const markupTypeRadios = document.getElementsByName('markup-type');
+
+        const monthsSlider = document.getElementById('months-slider');
+        const monthsValDisplay = document.getElementById('months-val');
+        const quickMonthBtns = document.querySelectorAll('.quick-month');
+
+        const calculateBtn = document.getElementById('calculate-btn');
+        const resultsCard = document.getElementById('results-card');
+        const comparisonCard = document.getElementById('comparison-card');
+        const receiptCard = document.getElementById('receipt-card');
+
+        // Theme Toggle
+        themeToggle.addEventListener('click', () => {
+            state.theme = state.theme === 'dark' ? 'light' : 'dark';
+            body.setAttribute('data-theme', state.theme);
+            themeIcon.innerText = state.theme === 'dark' ? '🌙' : '☀️';
+        });
+
+        // Profit Logic
+        profitBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (btn.id === 'custom-profit-btn') {
+                    customProfitContainer.style.display = 'block';
+                    profitBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    state.profitPercent = parseFloat(customProfitInput.value) || 0;
+                } else {
+                    customProfitContainer.style.display = 'none';
+                    profitBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    state.profitPercent = parseFloat(btn.dataset.val);
+                }
+                updateLiveCalculations();
+            });
+        });
+
+        customProfitInput.addEventListener('input', () => {
+            state.profitPercent = parseFloat(customProfitInput.value) || 0;
+            updateLiveCalculations();
+        });
+
+        originalPriceInput.addEventListener('input', () => {
+            state.originalPrice = parseFloat(originalPriceInput.value) || 0;
+            updateLiveCalculations();
+        });
+
+        downPaymentInput.addEventListener('input', () => {
+            state.downPayment = parseFloat(downPaymentInput.value) || 0;
+            updateLiveCalculations();
+        });
+
+        // Markup Logic
+        markupToggle.addEventListener('change', () => {
+            state.markupEnabled = markupToggle.checked;
+            markupOptions.style.display = state.markupEnabled ? 'block' : 'none';
+            updateLiveCalculations();
+        });
+
+        markupTypeRadios.forEach(radio => {
+            radio.addEventListener('change', () => {
+                state.markupType = radio.value;
+                updateLiveCalculations();
+            });
+        });
+
+        markupPercentInput.addEventListener('input', () => {
+            state.markupPercent = parseFloat(markupPercentInput.value) || 0;
+            updateLiveCalculations();
+        });
+
+        // Months Logic
+        monthsSlider.addEventListener('input', () => {
+            state.months = parseInt(monthsSlider.value);
+            monthsValDisplay.innerText = state.months;
+            syncQuickMonths(state.months);
+            updateLiveCalculations();
+        });
+
+        quickMonthBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                state.months = parseInt(btn.dataset.val);
+                monthsSlider.value = state.months;
+                monthsValDisplay.innerText = state.months;
+                syncQuickMonths(state.months);
+                updateLiveCalculations();
+            });
+        });
+
+        function syncQuickMonths(val) {
+            quickMonthBtns.forEach(btn => {
+                if (parseInt(btn.dataset.val) === val) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        // Live Calculations
+        function updateLiveCalculations() {
+            state.sellingPrice = state.originalPrice + (state.originalPrice * state.profitPercent / 100);
+            sellingPriceDisplay.innerText = Math.round(state.sellingPrice).toLocaleString();
+            
+            state.remainingAmount = state.sellingPrice - state.downPayment;
+            remainingPriceDisplay.innerText = Math.round(state.remainingAmount).toLocaleString();
+        }
+
+        // Main Calculation
+        calculateBtn.addEventListener('click', () => {
+            if (state.originalPrice <= 0) {
+                alert("Please enter a valid original price.");
+                return;
+            }
+
+            // Perform Calculations
+            state.sellingPrice = state.originalPrice + (state.originalPrice * state.profitPercent / 100);
+            state.remainingAmount = state.sellingPrice - state.downPayment;
+
+            if (state.markupEnabled) {
+                if (state.markupType === 'flat') {
+                    state.markupAmount = state.remainingAmount * (state.markupPercent / 100);
+                } else {
+                    state.markupAmount = state.remainingAmount * (state.markupPercent / 100) * state.months;
+                }
+            } else {
+                state.markupAmount = 0;
+            }
+
+            state.totalPayable = state.remainingAmount + state.markupAmount;
+            state.monthlyInstallment = state.totalPayable / state.months;
+
+            // Update UI
+            document.getElementById('res-original').innerText = Math.round(state.originalPrice).toLocaleString();
+            document.getElementById('res-profit-amt').innerText = Math.round(state.originalPrice * state.profitPercent / 100).toLocaleString();
+            document.getElementById('res-profit-pct').innerText = state.profitPercent;
+            document.getElementById('res-selling').innerText = Math.round(state.sellingPrice).toLocaleString();
+            document.getElementById('res-down').innerText = Math.round(state.downPayment).toLocaleString();
+            document.getElementById('res-remaining').innerText = Math.round(state.remainingAmount).toLocaleString();
+            
+            const markupRow = document.getElementById('res-markup-row');
+            if (state.markupEnabled) {
+                markupRow.style.display = 'flex';
+                document.getElementById('res-markup-amt').innerText = Math.round(state.markupAmount).toLocaleString();
+            } else {
+                markupRow.style.display = 'none';
+            }
+
+            document.getElementById('res-total').innerText = Math.round(state.totalPayable).toLocaleString();
+            document.getElementById('res-months').innerText = state.months;
+            document.getElementById('res-installment').innerText = Math.round(state.monthlyInstallment).toLocaleString();
+
+            // Show Cards
+            resultsCard.style.display = 'block';
+            comparisonCard.style.display = 'block';
+            receiptCard.style.display = 'block';
+
+            // Generate Comparison Table
+            generateComparisonTable();
+
+            // Scroll to results
+            resultsCard.scrollIntoView({ behavior: 'smooth' });
+        });
+
+        function generateComparisonTable() {
+            const tbody = document.querySelector('#comparison-table tbody');
+            tbody.innerHTML = '';
+            const plans = [3, 6, 9, 12, 18, 24];
+
+            plans.forEach(m => {
+                let m_markupAmt = 0;
+                if (state.markupEnabled) {
+                    if (state.markupType === 'flat') {
+                        m_markupAmt = state.remainingAmount * (state.markupPercent / 100);
+                    } else {
+                        m_markupAmt = state.remainingAmount * (state.markupPercent / 100) * m;
+                    }
+                }
+                const m_total = state.remainingAmount + m_markupAmt;
+                const m_inst = m_total / m;
+
+                const tr = document.createElement('tr');
+                if (m === state.months) tr.classList.add('highlight-row');
+
+                tr.innerHTML = `
+                    <td>${m} Months</td>
+                    <td>Rs. ${Math.round(m_inst).toLocaleString()}</td>
+                    <td>Rs. ${Math.round(m_total).toLocaleString()}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Receipt Generation
+        const generateReceiptBtn = document.getElementById('generate-receipt-btn');
+        const receiptPreviewContainer = document.getElementById('receipt-preview-container');
+        const saleDateInput = document.getElementById('sale-date');
+        const receiptNumInput = document.getElementById('receipt-num');
+
+        // Set default values for receipt
+        const today = new Date().toISOString().split('T')[0];
+        saleDateInput.value = today;
+        receiptNumInput.value = 'RCP-' + Math.floor(1000 + Math.random() * 9000);
+
+        generateReceiptBtn.addEventListener('click', () => {
+            const shopName = document.getElementById('shop-name').value || "STAR MOBILE CENTER";
+            const shopAddress = document.getElementById('shop-address').value || "Main Bazar, Pirowal";
+            const shopPhone = document.getElementById('shop-phone').value || "0300-1234567";
+            const custName = document.getElementById('cust-name').value || "Walk-in Customer";
+            const custPhone = document.getElementById('cust-phone').value || "N/A";
+            const model = document.getElementById('mobile-model').value || "Mobile Device";
+            const saleDate = saleDateInput.value;
+            const receiptNum = receiptNumInput.value;
+
+            // Update Preview
+            document.getElementById('rec-shop-name').innerText = shopName;
+            document.getElementById('rec-shop-info').innerText = `${shopAddress} | ${shopPhone}`;
+            document.getElementById('rec-num').innerText = receiptNum;
+            document.getElementById('rec-date').innerText = formatDate(saleDate);
+            document.getElementById('rec-cust-name').innerText = custName;
+            document.getElementById('rec-cust-phone').innerText = custPhone;
+            document.getElementById('rec-model').innerText = model;
+            document.getElementById('rec-orig').innerText = Math.round(state.originalPrice).toLocaleString();
+            document.getElementById('rec-sell').innerText = Math.round(state.sellingPrice).toLocaleString();
+            document.getElementById('rec-down').innerText = Math.round(state.downPayment).toLocaleString();
+            document.getElementById('rec-rem').innerText = Math.round(state.remainingAmount).toLocaleString();
+            
+            const recMarkupRow = document.getElementById('rec-markup-row');
+            if (state.markupEnabled) {
+                recMarkupRow.style.display = 'flex';
+                document.getElementById('rec-markup').innerText = Math.round(state.markupAmount).toLocaleString();
+            } else {
+                recMarkupRow.style.display = 'none';
+            }
+
+            document.getElementById('rec-total').innerText = Math.round(state.totalPayable).toLocaleString();
+            document.getElementById('rec-inst').innerText = Math.round(state.monthlyInstallment).toLocaleString();
+            document.getElementById('rec-months').innerText = state.months;
+            document.getElementById('rec-footer-shop').innerText = shopName;
+
+            // Generate Schedule
+            const scheduleDiv = document.getElementById('rec-schedule');
+            scheduleDiv.innerHTML = '<div class="receipt-title">Payment Schedule</div>';
+            
+            const startDate = new Date(saleDate);
+            for (let i = 1; i <= Math.min(state.months, 3); i++) {
+                startDate.setMonth(startDate.getMonth() + 1);
+                const item = document.createElement('div');
+                item.className = 'schedule-item';
+                item.innerHTML = `Month ${i}: Rs. ${Math.round(state.monthlyInstallment).toLocaleString()} — Due: ${formatDateObj(startDate)}`;
+                scheduleDiv.appendChild(item);
+            }
+
+            if (state.months > 3) {
+                const more = document.createElement('div');
+                more.className = 'schedule-item';
+                more.style.fontWeight = '700';
+                more.style.marginTop = '5px';
+                more.innerText = `...and ${state.months - 3} more payments of Rs. ${Math.round(state.monthlyInstallment).toLocaleString()}/month`;
+                scheduleDiv.appendChild(more);
+            }
+
+            receiptPreviewContainer.style.display = 'block';
+            receiptPreviewContainer.scrollIntoView({ behavior: 'smooth' });
+        });
+
+        function formatDate(dateStr) {
+            const d = new Date(dateStr);
+            return formatDateObj(d);
+        }
+
+        function formatDateObj(d) {
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        // Download PDF
+        document.getElementById('download-pdf').addEventListener('click', async () => {
+            const { jsPDF } = window.jspdf;
+            const element = document.getElementById('receipt-preview');
+            const canvas = await html2canvas(element, { scale: 2 });
+            const imgData = canvas.toDataURL('image/png');
+            
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const imgProps = pdf.getImageProperties(imgData);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+            
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.save(`Receipt-${document.getElementById('receipt-num').value}.pdf`);
+        });
+
+        // Download PNG
+        document.getElementById('download-png').addEventListener('click', async () => {
+            const element = document.getElementById('receipt-preview');
+            const canvas = await html2canvas(element, { scale: 2 });
+            const link = document.createElement('a');
+            link.download = `Receipt-${document.getElementById('receipt-num').value}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+
+        // Initial Load
+        updateLiveCalculations();
+    </script>
+</body>
+</html>
